@@ -49,12 +49,10 @@ const PreferencesDialog = ({
     values,
     setThemeName,
     setCodeEditorThemeName,
-    setAutoDownloadUpdates,
     showAllAlertMessages,
     showAllTutorialHints,
     showAllAnnouncements,
     showAllAskAiStandAloneForms,
-    setAutoDisplayChangelog,
     setEventsSheetShowObjectThumbnails,
     setAutosaveOnPreview,
     setUseGDJSDevelopmentWatcher,
@@ -289,27 +287,7 @@ const PreferencesDialog = ({
               </LineStackLayout>
             )}
           </ColumnStackLayout>
-          <Text size="block-title">
-            <Trans>Updates</Trans>
-          </Text>
-          <ColumnStackLayout expand>
-            <CompactToggleField
-              labelColor="primary"
-              hideTooltip
-              onCheck={setAutoDownloadUpdates}
-              checked={values.autoDownloadUpdates}
-              label={i18n._(t`Auto download and install updates (recommended)`)}
-            />
-            <CompactToggleField
-              labelColor="primary"
-              hideTooltip
-              onCheck={setAutoDisplayChangelog}
-              checked={values.autoDisplayChangelog}
-              label={i18n._(
-                t`Display What's New when a new version is launched (recommended)`
-              )}
-            />
-          </ColumnStackLayout>
+
           <Text size="block-title">
             <Trans>Events Sheet</Trans>
           </Text>
@@ -388,11 +366,6 @@ const PreferencesDialog = ({
               onClick={() => showAllTutorialHints()}
               disabled={!Object.keys(values.hiddenTutorialHints).length}
             />
-            <FlatButton
-              label={<Trans>Reset hidden announcements</Trans>}
-              onClick={() => showAllAnnouncements()}
-              disabled={!Object.keys(values.hiddenAnnouncements).length}
-            />
           </ColumnStackLayout>
           <Column noMargin>
             <Text size="block-title">
@@ -402,15 +375,6 @@ const PreferencesDialog = ({
               <Text size="sub-title">
                 <Trans>At launch</Trans>
               </Text>
-              <CompactToggleField
-                labelColor="primary"
-                hideTooltip
-                onCheck={setShowCreateSectionByDefault}
-                checked={values.showCreateSectionByDefault}
-                label={i18n._(
-                  t`Show the "Create" section by default when opening GDevelop`
-                )}
-              />
               <CompactToggleField
                 labelColor="primary"
                 hideTooltip
@@ -541,29 +505,6 @@ const PreferencesDialog = ({
               <Text size="sub-title">
                 <Trans>Other</Trans>
               </Text>
-              <FlatButton
-                label={<Trans>Reset hidden Ask AI text inputs</Trans>}
-                onClick={() => showAllAskAiStandAloneForms()}
-                disabled={
-                  !Object.keys(values.hiddenAskAiStandAloneForms).length
-                }
-              />
-              <CompactToggleField
-                labelColor="primary"
-                hideTooltip
-                onCheck={setShowAiAskButtonInTitleBar}
-                checked={values.showAiAskButtonInTitleBar}
-                label={i18n._(t`Show "Ask AI" button in the title bar`)}
-              />
-              <CompactToggleField
-                labelColor="primary"
-                hideTooltip
-                onCheck={setAutomaticallyUseCreditsForAiRequests}
-                checked={values.automaticallyUseCreditsForAiRequests}
-                label={i18n._(
-                  t`Automatically use GDevelop credits for AI requests when run out of AI credits`
-                )}
-              />
               <CompactToggleField
                 labelColor="primary"
                 hideTooltip

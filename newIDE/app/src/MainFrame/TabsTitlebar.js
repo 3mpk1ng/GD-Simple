@@ -260,27 +260,6 @@ export default function TabsTitlebar({
         </IconButton>
       )}
       {renderTabs(onEditorTabHovered, onEditorTabClosing)}
-      {shouldDisplayAskAi ? (
-        <div
-          style={styles.askAiContainer}
-          className={WINDOW_NON_DRAGGABLE_PART_CLASS_NAME}
-        >
-          <div className={isGlowing ? classes.askAiGlow : undefined}>
-            <TextButton
-              icon={<RobotIcon size={16} rotating={isAskAiIconAnimated} />}
-              label={'Ask AI'}
-              onClick={onAskAiClicked}
-            />
-          </div>
-        </div>
-      ) : null}
-      {isRightMostPane && <TitleBarRightSafeMargins />}
-      {tooltipData && tooltipData.element.isConnected && (
-        <TabsTitlebarTooltip
-          anchorElement={tooltipData.element}
-          editorTab={tooltipData.editorTab}
-        />
-      )}
     </div>
   );
 }

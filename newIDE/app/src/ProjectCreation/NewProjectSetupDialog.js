@@ -41,21 +41,18 @@ import { type I18n as I18nType } from '@lingui/core';
 import { I18n } from '@lingui/react';
 import { type PrivateGameTemplateListingData } from '../Utils/GDevelopServices/Shop';
 import { CLOUD_PROJECT_NAME_MAX_LENGTH } from '../Utils/GDevelopServices/Project';
-import EmptyAndStartingPointProjects, {
-  isLinkedToStartingPointExampleShortHeader,
-  isStartingPointExampleShortHeader,
-} from './EmptyAndStartingPointProjects';
+import EmptyAndStartingPointProjects from './EmptyAndStartingPointProjects';
 import TextButton from '../UI/TextButton';
 import ChevronArrowLeft from '../UI/CustomSvgIcons/ChevronArrowLeft';
 import ExampleInformationPage from '../AssetStore/ExampleStore/ExampleInformationPage';
-import PrivateGameTemplateInformationPage from '../AssetStore/PrivateGameTemplates/PrivateGameTemplateInformationPage';
 import ExampleStore from '../AssetStore/ExampleStore';
+import PrivateGameTemplateInformationPage from '../AssetStore/PrivateGameTemplates/PrivateGameTemplateInformationPage';
 import Text from '../UI/Text';
 import { type WindowSizeType } from '../UI/Responsive/ResponsiveWindowMeasurer';
 import { PrivateGameTemplateStoreContext } from '../AssetStore/PrivateGameTemplates/PrivateGameTemplateStoreContext';
 import { getUserProductPurchaseUsageType } from '../AssetStore/ProductPageHelper';
-import { useOnlineStatus } from '../Utils/OnlineStatus';
 import PrivateGameTemplateOwnedInformationPage from '../AssetStore/PrivateGameTemplates/PrivateGameTemplateOwnedInformationPage';
+import { useOnlineStatus } from '../Utils/OnlineStatus';
 import { ExampleStoreContext } from '../AssetStore/ExampleStore/ExampleStoreContext';
 import EmptyMessage from '../UI/EmptyMessage';
 import { BundleStoreContext } from '../AssetStore/Bundles/BundleStoreContext';
@@ -187,20 +184,11 @@ const NewProjectSetupDialog = ({
     emptyProjectSelected,
     setEmptyProjectSelected,
   ] = React.useState<boolean>(false);
-  const [startersSelected, setStartersSelected] = React.useState<boolean>(
-    false
-  );
   const { exampleShortHeaders } = React.useContext(ExampleStoreContext);
   const isOnHomePage =
     !selectedExampleShortHeader &&
     !selectedPrivateGameTemplateListingData &&
-    !emptyProjectSelected &&
-    !startersSelected;
-  const isOnStartersPage =
-    !selectedExampleShortHeader &&
-    !selectedPrivateGameTemplateListingData &&
-    !emptyProjectSelected &&
-    startersSelected;
+    !emptyProjectSelected;
 
   const { privateGameTemplateListingDatas } = React.useContext(
     PrivateGameTemplateStoreContext
@@ -529,24 +517,14 @@ const NewProjectSetupDialog = ({
       if (
         !emptyProjectSelected &&
         !selectedExampleShortHeader &&
-        !selectedPrivateGameTemplateListingData &&
-        !startersSelected
+        !selectedPrivateGameTemplateListingData
       ) {
         // Reset project name when everything is unselected.
         setProjectName(generateProjectName());
       }
 
-      if (
-        selectedExampleShortHeader &&
-        !isStartingPointExampleShortHeader(selectedExampleShortHeader) &&
-        (!exampleShortHeaders ||
-          !isLinkedToStartingPointExampleShortHeader(
-            exampleShortHeaders,
-            selectedExampleShortHeader
-          ))
-      ) {
+      if (selectedExampleShortHeader) {
         // If it's a template, generate a name based on the template name.
-        // (We don't do it for starting points)
         setProjectName(generateProjectName(selectedExampleShortHeader.name));
         return;
       }
@@ -563,8 +541,6 @@ const NewProjectSetupDialog = ({
       selectedExampleShortHeader,
       selectedPrivateGameTemplateListingData,
       emptyProjectSelected,
-      startersSelected,
-      exampleShortHeaders,
     ]
   );
 
@@ -583,10 +559,6 @@ const NewProjectSetupDialog = ({
           onSelectPrivateGameTemplateListingData(null);
           return;
         }
-        if (startersSelected) {
-          setStartersSelected(false);
-          return;
-        }
       }
     },
     [
@@ -597,7 +569,6 @@ const NewProjectSetupDialog = ({
       onSelectExampleShortHeader,
       selectedPrivateGameTemplateListingData,
       onSelectPrivateGameTemplateListingData,
-      startersSelected,
       preventBackHome,
     ]
   );
@@ -637,11 +608,8 @@ const NewProjectSetupDialog = ({
           cannotBeDismissed={isLoading}
           onRequestClose={onClose}
           fullHeight={
-            // Make full height if on home page or starters page,
+            // Make full height if on home page,
             isOnHomePage ||
-            (startersSelected &&
-              !selectedExampleShortHeader &&
-              !emptyProjectSelected) ||
             // Or if a template is selected but not owned (to show the full information page).
             (!!selectedPrivateGameTemplateListingData &&
               !selectedGameTemplatePurchaseUsageType)
@@ -679,16 +647,10 @@ const NewProjectSetupDialog = ({
                   onCloseAskAi={onCloseAskAi}
                 />
                 <EmptyAndStartingPointProjects
-                  onSelectExampleShortHeader={exampleShortHeader => {
-                    onSelectExampleShortHeader(exampleShortHeader);
-                  }}
                   onSelectEmptyProject={() => {
                     setEmptyProjectSelected(true);
                   }}
                   disabled={isLoading}
-                  onSeeAll={() => {
-                    setStartersSelected(true);
-                  }}
                 />
                 {isOnline ? (
                   <>
@@ -737,17 +699,6 @@ const NewProjectSetupDialog = ({
                   onGameTemplateOpen={onSelectPrivateGameTemplateListingData}
                 />
               )}
-            {isOnStartersPage && (
-              <EmptyAndStartingPointProjects
-                onSelectExampleShortHeader={exampleShortHeader => {
-                  onSelectExampleShortHeader(exampleShortHeader);
-                }}
-                onSelectEmptyProject={() => {
-                  setEmptyProjectSelected(true);
-                }}
-                disabled={isLoading}
-              />
-            )}
             {shouldShowCreateActions && (
               <ColumnStackLayout noMargin>
                 {selectedExampleShortHeader ? (

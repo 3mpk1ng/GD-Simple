@@ -279,14 +279,6 @@ export const buildMainMenuDeclarativeTemplate = ({
     label: i18n._(t`Help`),
     role: 'help',
     submenu: [
-      ...(hideAskAi
-        ? []
-        : [
-            {
-              label: i18n._(t`Ask AI (AI agent and chatbot)`),
-              onClickSendEvent: 'main-menu-open-ask-ai',
-            },
-          ]),
       {
         label: i18n._(t`GDevelop website`),
         onClickOpenLink: 'http://gdevelop.io',

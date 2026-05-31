@@ -338,7 +338,7 @@ export const HomePage: React.ComponentType<Props> = React.memo<Props>(
         ? 'create'
         : 'learn';
 
-      const [activeTab, setActiveTab] = React.useState<HomeTab>(initialTab);
+      const [activeTab, setActiveTab] = React.useState<HomeTab>('create');
 
       const { setInitialPackUserFriendlySlug } = React.useContext(
         AssetStoreContext

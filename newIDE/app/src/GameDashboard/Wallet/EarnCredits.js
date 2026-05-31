@@ -17,11 +17,9 @@ import Coin from '../../Credits/Icons/Coin';
 import { selectMessageByLocale } from '../../Utils/i18n/MessageByLocale';
 import { I18n } from '@lingui/react';
 import { useResponsiveWindowSize } from '../../UI/Responsive/ResponsiveWindowMeasurer';
-import RouterContext from '../../MainFrame/RouterContext';
 import FlatButton from '../../UI/FlatButton';
 import MultipleCoins from '../../Credits/Icons/MultipleCoins';
 
-type CreditItemType = 'badge' | 'feedback';
 type BadgeInfo = {|
   id: string,
   label: React.Node,
@@ -29,15 +27,10 @@ type BadgeInfo = {|
   hasThisBadge?: boolean,
   type: 'badge',
 |};
-type FeedbackInfo = {|
-  id: string,
-  type: 'feedback',
-|};
-type CreditItem = BadgeInfo | FeedbackInfo;
 
 const styles = {
   widgetContainer: {
-    maxWidth: 1800, // To avoid taking too much space on large screens.
+    maxWidth: 1800,
   },
   badgeContainer: {
     position: 'relative',
@@ -58,51 +51,16 @@ const styles = {
     width: 16,
     height: 16,
   },
-  badgeTextContainer: {
-    display: 'flex',
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1,
-    gap: 4,
-    color: 'white',
-  },
   itemPlaceholder: {
     display: 'flex',
     flex: 1,
   },
 };
 
-const FeedbackItem = () => {
-  const { navigateToRoute } = React.useContext(RouterContext);
-  return (
-    <LineStackLayout expand alignItems="center" noMargin>
-      <div style={styles.badgeContainer}>
-        <MultipleCoins style={styles.badgeImage} />
-      </div>
-      <Column noMargin expand>
-        <Text size="body" noMargin color="secondary">
-          <Trans>Give feedback on a game!</Trans>
-        </Text>
-      </Column>
-      <FlatButton
-        label={<Trans>Play a game</Trans>}
-        leftIcon={<Coin style={styles.badgeCoinIcon} />}
-        primary
-        onClick={() => {
-          navigateToRoute('play', {
-            'playable-game-id': 'random',
-          });
-        }}
-      />
-    </LineStackLayout>
-  );
-};
-
 const allBadgesInfo: BadgeInfo[] = [
   {
     id: 'github-star',
-    label: 'Star GDevelop', // Do not translate "Star".
+    label: 'Star GDevelop',
     linkUrl: 'https://github.com/4ian/GDevelop',
     type: 'badge',
   },
@@ -143,16 +101,13 @@ export const hasMissingBadges = (
   badges: ?Array<Badge>,
   achievements: ?Array<Achievement>
 ): boolean =>
-  // Not connected
   !badges ||
   !achievements ||
-  // Connected but some achievements are not yet claimed
   achievements.some(achievement => !hasBadge(badges, achievement.id));
 
 const BadgeItem = ({
   achievement,
   hasThisBadge,
-  buttonLabel,
   linkUrl,
   onOpenProfile,
 }: {|
@@ -186,7 +141,7 @@ const BadgeItem = ({
                   (achievement && achievement.iconUrl) ||
                   'res/badges/empty-badge.svg'
                 }
-                alt="Empty badge"
+                alt="Badge icon"
                 style={styles.badgeImage}
               />
             ) : (
@@ -267,91 +222,46 @@ export const EarnCredits = ({
   );
 
   const missingBadges = React.useMemo(
-    () => {
-      return allBadgesWithOwnedStatus.filter(badge => !badge.hasThisBadge);
-    },
+    () => allBadgesWithOwnedStatus.filter(badge => !badge.hasThisBadge),
     [allBadgesWithOwnedStatus]
-  );
-
-  const randomItemToShow: ?CreditItemType = React.useMemo(
-    () => {
-      // If on mobile, and not forcing all items, show only 1 item to avoid taking too much space.
-      if (showRandomItem || (isMobile && !showAllItems)) {
-        if (missingBadges.length === 0) {
-          return 'feedback';
-        }
-
-        const totalPossibilities = missingBadges.length + 1; // +1 for feedback
-        // Randomize between badge and feedback, with the weight of the number of badges missing.
-        const randomIndex = Math.floor(Math.random() * totalPossibilities);
-        if (randomIndex === totalPossibilities - 1) {
-          return 'feedback';
-        }
-
-        return 'badge';
-      }
-
-      return null;
-    },
-    [missingBadges, showRandomItem, showAllItems, isMobile]
   );
 
   const badgesToShow: Array<BadgeInfo> = React.useMemo(
     () => {
-      if (!!randomItemToShow && randomItemToShow !== 'badge') {
-        return [];
-      }
-
-      if (randomItemToShow === 'badge') {
+      if (showRandomItem || (isMobile && !showAllItems)) {
         if (missingBadges.length === 0) {
           const randomIndex = Math.floor(
             Math.random() * allBadgesWithOwnedStatus.length
           );
           return [allBadgesWithOwnedStatus[randomIndex]];
         }
-
         const randomIndex = Math.floor(Math.random() * missingBadges.length);
         return [missingBadges[randomIndex]];
       }
 
       return allBadgesWithOwnedStatus;
     },
-    [allBadgesWithOwnedStatus, missingBadges, randomItemToShow]
+    [
+      allBadgesWithOwnedStatus,
+      missingBadges,
+      showRandomItem,
+      showAllItems,
+      isMobile,
+    ]
   );
 
-  const feedbackItemsToShow: FeedbackInfo[] = React.useMemo(
-    () => {
-      if (!!randomItemToShow && randomItemToShow !== 'feedback') {
-        return [];
-      }
-
-      return [
-        {
-          id: 'random-game-feedback',
-          type: 'feedback',
-        },
-      ];
-    },
-    [randomItemToShow]
-  );
-
-  const allItemsToShow: CreditItem[] = React.useMemo(
-    () => [...badgesToShow, ...feedbackItemsToShow],
-    [badgesToShow, feedbackItemsToShow]
-  );
-
-  const onlyOneItemDisplayed = allItemsToShow.length === 1;
+  const onlyOneItemDisplayed = badgesToShow.length === 1;
   const itemsPerRow = onlyOneItemDisplayed ? 1 : isExtraLargeScreen ? 3 : 2;
-  // Slice items in arrays of two to display them in a responsive way.
-  const itemsSlicedInArrays: CreditItem[][] = React.useMemo(
+
+  const itemsSlicedInArrays: BadgeInfo[][] = React.useMemo(
     () => {
-      const slicedItems: CreditItem[][] = [];
-      for (let i = 0; i < allItemsToShow.length; i += itemsPerRow) {
-        slicedItems.push(allItemsToShow.slice(i, i + itemsPerRow));
+      const slicedItems: BadgeInfo[][] = [];
+      for (let i = 0; i < badgesToShow.length; i += itemsPerRow) {
+        slicedItems.push(badgesToShow.slice(i, i + itemsPerRow));
       }
       return slicedItems;
     },
-    [allItemsToShow, itemsPerRow]
+    [badgesToShow, itemsPerRow]
   );
 
   return (
@@ -363,28 +273,16 @@ export const EarnCredits = ({
             expand={onlyOneItemDisplayed}
             key={`item-line-${index}`}
           >
-            {items
-              .map(item => {
-                if (item.type === 'feedback') {
-                  return <FeedbackItem key={item.id} />;
-                }
-
-                if (item.type === 'badge') {
-                  return (
-                    <BadgeItem
-                      key={item.id}
-                      achievement={getAchievement(achievements, item.id)}
-                      hasThisBadge={!!item.hasThisBadge}
-                      buttonLabel={item.label}
-                      linkUrl={item.linkUrl}
-                      onOpenProfile={onOpenProfile}
-                    />
-                  );
-                }
-
-                return null;
-              })
-              .filter(Boolean)}
+            {items.map(item => (
+              <BadgeItem
+                key={item.id}
+                achievement={getAchievement(achievements, item.id)}
+                hasThisBadge={!!item.hasThisBadge}
+                buttonLabel={item.label}
+                linkUrl={item.linkUrl}
+                onOpenProfile={onOpenProfile}
+              />
+            ))}
             {items.length < itemsPerRow &&
               !onlyOneItemDisplayed &&
               Array.from(

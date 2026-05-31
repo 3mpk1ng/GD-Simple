@@ -170,11 +170,6 @@ export const allAlertMessages: Array<{
   },
 ];
 
-/**
- * All the preferences of GDevelop. To add a new preference, add it into this
- * type and add a setter into `Preferences` type. Then, update the
- * preference dialog.
- */
 export type EditorStateForProject = {|
   editorTabs: EditorTabsPersistedState | null,
   propertiesPanelScroll: { [string]: { [string]: number } },
@@ -185,7 +180,6 @@ export type EditorStateForProjectUpdate = $Shape<EditorStateForProject>;
 
 export type PreferencesValues = {|
   language: string,
-  autoDownloadUpdates: boolean,
   themeName: string,
   codeEditorThemeName: string,
   hiddenAlertMessages: { [AlertMessageIdentifier]: boolean },
@@ -244,26 +238,17 @@ export type PreferencesValues = {|
   useBackgroundSerializerForSaving: boolean,
   disableNpmScriptConfirmation: boolean,
   showJsTypeError: boolean,
-  canonicalEventSerialization: boolean,
 |};
 
-/**
- * Partial PreferencesValues that can be overridden per-project via preferences block in gdevelop-settings.yaml.
- */
 // $FlowFixMe[deprecated-utility]
 export type ProjectSpecificPreferencesValues = $Shape<PreferencesValues>;
 
-/**
- * Type containing all the preferences of GDevelop and their setters.
- */
 export type Preferences = {|
   values: PreferencesValues,
   setMultipleValues: (updates: ProjectSpecificPreferencesValues) => void,
   setLanguage: (language: string) => void,
   setThemeName: (themeName: string) => void,
   setCodeEditorThemeName: (codeEditorThemeName: string) => void,
-  setAutoDownloadUpdates: (enabled: boolean) => void,
-  checkUpdates: (forceDownload?: boolean) => void,
   setAutoDisplayChangelog: (enabled: boolean) => void,
   showAlertMessage: (identifier: AlertMessageIdentifier, show: boolean) => void,
   showAllAlertMessages: () => void,
@@ -273,7 +258,6 @@ export type Preferences = {|
   showAllAnnouncements: () => void,
   showAskAiStandAloneForm: (identifier: string, show: boolean) => void,
   showAllAskAiStandAloneForms: () => void,
-  verifyIfIsNewVersion: () => boolean,
   setEventsSheetShowObjectThumbnails: (enabled: boolean) => void,
   setAutosaveOnPreview: (enabled: boolean) => void,
   setUseGDJSDevelopmentWatcher: (enabled: boolean) => void,
@@ -368,18 +352,15 @@ export type Preferences = {|
   setAutomaticallyUseCreditsForAiRequests: (enabled: boolean) => void,
   setUseBackgroundSerializerForSaving: (enabled: boolean) => void,
   setShowJsTypeError: (enabled: boolean) => void,
-  setCanonicalEventSerialization: (enabled: boolean) => void,
 |};
 
 export const initialPreferences = {
   values: {
     language: 'en',
-    autoDownloadUpdates: true,
     themeName: ((typeof window !== 'undefined' &&
     window.matchMedia('(prefers-color-scheme: dark)').matches
       ? 'GDevelop default Dark'
-      : // TODO: Use the light theme back when it's adapted to the modern theme.
-        'GDevelop default Dark'): string),
+      : 'GDevelop default Dark'): string),
     codeEditorThemeName: 'vs-dark',
     hiddenAlertMessages: {},
     hiddenTutorialHints: {},
@@ -434,14 +415,11 @@ export const initialPreferences = {
     useBackgroundSerializerForSaving: false,
     disableNpmScriptConfirmation: false,
     showJsTypeError: false,
-    canonicalEventSerialization: false,
   },
   setMultipleValues: () => {},
   setLanguage: () => {},
   setThemeName: () => {},
   setCodeEditorThemeName: () => {},
-  setAutoDownloadUpdates: () => {},
-  checkUpdates: () => {},
   setAutoDisplayChangelog: () => {},
   showAlertMessage: (identifier: AlertMessageIdentifier, show: boolean) => {},
   showAllAlertMessages: () => {},
@@ -451,7 +429,6 @@ export const initialPreferences = {
   showAllAnnouncements: () => {},
   showAskAiStandAloneForm: (identifier: string, show: boolean) => {},
   showAllAskAiStandAloneForms: () => {},
-  verifyIfIsNewVersion: (): boolean => false,
   setEventsSheetShowObjectThumbnails: () => {},
   setAutosaveOnPreview: () => {},
   setUseGDJSDevelopmentWatcher: (enabled: boolean) => {},
@@ -521,7 +498,6 @@ export const initialPreferences = {
   setAutomaticallyUseCreditsForAiRequests: (enabled: boolean) => {},
   setUseBackgroundSerializerForSaving: (enabled: boolean) => {},
   setShowJsTypeError: (enabled: boolean) => {},
-  setCanonicalEventSerialization: (enabled: boolean) => {},
 };
 
 const PreferencesContext: React.Context<Preferences> = React.createContext<Preferences>(

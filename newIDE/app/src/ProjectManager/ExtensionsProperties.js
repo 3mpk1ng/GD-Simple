@@ -16,6 +16,9 @@ function ExtensionsProperties(props: Props): React.Node | null {
   const propertyList = [];
   for (let i = 0; i < allExtensions.size(); i++) {
     const extension = allExtensions.at(i);
+
+    if (extension.getName() === 'MyDummyExtension') continue;
+
     const properties = project
       .getExtensionProperties()
       .getAllExtensionProperties(extension.getName(), project);
@@ -50,7 +53,6 @@ function ExtensionsProperties(props: Props): React.Node | null {
             .setValue(extension.getName(), propertyName, newValue);
         }
       },
-      layersContainer: null,
     });
 
     propertyList.push(

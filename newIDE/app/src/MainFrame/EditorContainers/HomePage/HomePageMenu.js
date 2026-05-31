@@ -72,7 +72,7 @@ const homePageMenuTabs: { [tab: HomeTab]: HomePageMenuTab } = {
     getIcon: ({ color, fontSize }) => (
       <StoreIcon fontSize={fontSize} color={color} />
     ),
-  },
+  } /*
   learn: {
     label: <Trans>Learn</Trans>,
     tab: 'learn',
@@ -96,7 +96,7 @@ const homePageMenuTabs: { [tab: HomeTab]: HomePageMenuTab } = {
     getIcon: ({ color, fontSize }) => (
       <BookLeafIcon fontSize={fontSize} color={color} />
     ),
-  },
+  },*/,
 };
 
 export const getTabsToDisplay = ({
@@ -119,13 +119,8 @@ export const getTabsToDisplay = ({
   const displayTeachTab =
     !shouldHideClassroomTab(limits) && !isNativeMobileApp();
   // $FlowFixMe[incompatible-type]
-  const tabs: HomeTab[] = [
-    'learn',
-    'create',
-    displayPlayTab ? 'play' : null,
-    displayShopTab ? 'shop' : null,
-    displayTeachTab ? 'team-view' : null,
-  ].filter(Boolean);
+  const tabs: HomeTab[] = ['create'];
+
   return tabs.map(tab => homePageMenuTabs[tab]);
 };
 

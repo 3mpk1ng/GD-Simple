@@ -86,7 +86,7 @@ export const loadPreferencesFromLocalStorage = (): ?PreferencesValues => {
 
 export const getInitialPreferences = (): {
   autoDisplayChangelog: boolean,
-  autoDownloadUpdates: boolean,
+  autoDownloadUpdates: false,
   autoOpenMostRecentProject: boolean,
   automaticallyUseCreditsForAiRequests: boolean,
   autosaveOnPreview: boolean,
@@ -136,7 +136,6 @@ export const getInitialPreferences = (): {
   use3DEditor: any,
   useBackgroundSerializerForSaving: boolean,
   showJsTypeError: boolean,
-  canonicalEventSerialization: boolean,
   useGDJSDevelopmentWatcher: boolean,
   useShortcutToClosePreviewWindow: boolean,
   userShortcutMap: {},
@@ -407,10 +406,6 @@ export default class PreferencesProvider extends React.Component<Props, State> {
     ): any),
     // $FlowFixMe[method-unbinding]
     setShowJsTypeError: (this._setShowJsTypeError.bind(this): any),
-    // $FlowFixMe[method-unbinding]
-    setCanonicalEventSerialization: (this._setCanonicalEventSerialization.bind(
-      this
-    ): any),
   };
 
   componentDidMount() {
@@ -1277,15 +1272,6 @@ export default class PreferencesProvider extends React.Component<Props, State> {
     this.setState(
       state => ({
         values: { ...state.values, showJsTypeError: newValue },
-      }),
-      () => this._persistValuesToLocalStorage(this.state)
-    );
-  }
-
-  _setCanonicalEventSerialization(newValue: boolean) {
-    this.setState(
-      state => ({
-        values: { ...state.values, canonicalEventSerialization: newValue },
       }),
       () => this._persistValuesToLocalStorage(this.state)
     );

@@ -22,7 +22,6 @@ import {
   getAiRequest,
   type AiRequest,
   type AiRequestMessage,
-  type AiRequestMessageAssistantFunctionCall,
 } from '../Utils/GDevelopServices/Generation';
 import {
   getCloudProjectFileMetadataIdentifier,
@@ -76,10 +75,10 @@ import {
   type OpenAskAiOptions,
   type NewAiRequestOptions,
   useProcessFunctionCalls,
-  useActivatePendingSubAgents,
-  useLoadSubAgentRequests,
   useRefreshLimits,
-  getToolsVersionForAiRequestMode,
+  AI_AGENT_TOOLS_VERSION,
+  AI_CHAT_TOOLS_VERSION,
+  AI_ORCHESTRATOR_TOOLS_VERSION,
 } from './Utils';
 import PreferencesContext from '../MainFrame/Preferences/PreferencesContext';
 import UnsavedChangesContext from '../MainFrame/UnsavedChangesContext';
@@ -320,7 +319,6 @@ export const AskAiEditor: React.ComponentType<Props> = React.memo<Props>(
         selectedAiRequestId,
         selectedAiRequest,
         setSelectedAiRequestId,
-        activeSubAgents,
       } = React.useContext(AiRequestContext);
       const {
         isFetchingSuggestions,
@@ -539,7 +537,12 @@ export const AskAiEditor: React.ComponentType<Props> = React.memo<Props>(
                 fileMetadata,
                 storageProviderName,
                 mode,
-                toolsVersion: getToolsVersionForAiRequestMode(mode),
+                toolsVersion:
+                  mode === 'agent'
+                    ? AI_AGENT_TOOLS_VERSION
+                    : mode === 'orchestrator'
+                    ? AI_ORCHESTRATOR_TOOLS_VERSION
+                    : AI_CHAT_TOOLS_VERSION,
                 aiConfiguration: {
                   presetId: aiConfigurationPresetId,
                 },
@@ -613,26 +616,21 @@ export const AskAiEditor: React.ComponentType<Props> = React.memo<Props>(
       // Send the results of the function call outputs, if any, and the user message (if any).
       const onSendMessage = React.useCallback(
         async ({
-          aiRequestId,
           userMessage,
           createdSceneNames,
           createdProject,
           editorFunctionCallResults,
-          newMode,
+          mode,
         }: {|
-          aiRequestId: string,
           userMessage: string,
           createdSceneNames?: Array<string>,
           createdProject?: ?gdProject,
           editorFunctionCallResults: Array<EditorFunctionCallResult>,
-          newMode?: 'chat' | 'agent' | 'orchestrator',
+          mode?: 'chat' | 'agent' | 'orchestrator',
         |}) => {
-          if (!profile) return;
+          if (!profile || !selectedAiRequestId || !selectedAiRequest) return;
 
-          const aiRequestForMessage = aiRequests[aiRequestId];
-          if (!aiRequestForMessage) return;
-
-          if (isSendingAiRequest(aiRequestId)) {
+          if (isSendingAiRequest(selectedAiRequestId)) {
             console.info(
               'Skipping send for AI request: another send is already in progress.'
             );
@@ -650,7 +648,7 @@ export const AskAiEditor: React.ComponentType<Props> = React.memo<Props>(
 
           const hasFunctionsCallsToProcess =
             getFunctionCallsToProcess({
-              aiRequest: aiRequestForMessage,
+              aiRequest: selectedAiRequest,
               editorFunctionCallResults,
             }).length > 0;
 
@@ -693,7 +691,7 @@ export const AskAiEditor: React.ComponentType<Props> = React.memo<Props>(
           }
 
           try {
-            setSendingAiRequest(aiRequestId, true);
+            setSendingAiRequest(selectedAiRequestId, true);
             if (userMessage) setIsSendingUserMessage(true);
 
             const upToDateProject = createdProject || project;
@@ -730,7 +728,7 @@ export const AskAiEditor: React.ComponentType<Props> = React.memo<Props>(
               functionCallOutputs.some(
                 output =>
                   getFunctionCallNameByCallId({
-                    aiRequest: aiRequestForMessage,
+                    aiRequest: selectedAiRequest,
                     callId: output.call_id,
                   }) === 'initialize_project'
               );
@@ -744,13 +742,12 @@ export const AskAiEditor: React.ComponentType<Props> = React.memo<Props>(
               triggerUnsavedChanges();
             }
 
-            const modeForThisMessage =
-              newMode || aiRequestForMessage.mode || 'chat';
+            const modeForThisMessage = mode || selectedAiRequest.mode || 'chat';
 
             const aiRequest: AiRequest = await retryIfFailed({ times: 2 }, () =>
               addMessageToAiRequest(getAuthorizationHeader, {
                 userId: profile.id,
-                aiRequestId,
+                aiRequestId: selectedAiRequestId,
                 functionCallOutputs,
                 gameProjectJsonUserRelativeKey:
                   preparedAiUserContent.gameProjectJsonUserRelativeKey,
@@ -766,11 +763,15 @@ export const AskAiEditor: React.ComponentType<Props> = React.memo<Props>(
                 userMessage,
                 paused:
                   hasJustInitializedProject && modeForThisMessage === 'agent',
-                //  These are defined only if there is a mode change:
-                mode: newMode,
-                toolsVersion: newMode
-                  ? getToolsVersionForAiRequestMode(newMode)
-                  : undefined,
+                mode,
+                toolsVersion:
+                  mode === 'agent'
+                    ? AI_AGENT_TOOLS_VERSION
+                    : mode === 'orchestrator'
+                    ? AI_ORCHESTRATOR_TOOLS_VERSION
+                    : mode === 'chat'
+                    ? AI_CHAT_TOOLS_VERSION
+                    : undefined,
               })
             );
             updateAiRequest(aiRequest.id, () => aiRequest);
@@ -795,15 +796,15 @@ export const AskAiEditor: React.ComponentType<Props> = React.memo<Props>(
           } catch (error) {
             console.error('Error while sending AI request message:', error);
             // TODO: update the label of the button to send again.
-            setLastSendError(aiRequestId, error);
+            setLastSendError(selectedAiRequestId, error);
             setIsSendingUserMessage(false);
           }
 
-          if (userMessage && aiRequestId === selectedAiRequestId) {
+          if (userMessage) {
             const aiRequestChatRefCurrent = aiRequestChatRef.current;
             if (aiRequestChatRefCurrent) {
               aiRequestChatRefCurrent.resetUserInput('');
-              aiRequestChatRefCurrent.resetUserInput(aiRequestId);
+              aiRequestChatRefCurrent.resetUserInput(selectedAiRequestId);
             }
           }
 
@@ -812,7 +813,11 @@ export const AskAiEditor: React.ComponentType<Props> = React.memo<Props>(
           await delay(500);
           await refreshLimits({ withRetry: true });
 
-          if (createdSceneNames && createdSceneNames.length > 0) {
+          if (
+            selectedAiRequest &&
+            createdSceneNames &&
+            createdSceneNames.length > 0
+          ) {
             createdSceneNames.forEach(sceneName => {
               onOpenLayout(sceneName, {
                 openEventsEditor: true,
@@ -825,7 +830,6 @@ export const AskAiEditor: React.ComponentType<Props> = React.memo<Props>(
         [
           profile,
           selectedAiRequestId,
-          aiRequests,
           isSendingAiRequest,
           quota,
           aiRequestPriceInCredits,
@@ -839,24 +843,20 @@ export const AskAiEditor: React.ComponentType<Props> = React.memo<Props>(
           refreshLimits,
           project,
           onOpenLayout,
+          selectedAiRequest,
           automaticallyUseCreditsForAiRequests,
           triggerUnsavedChanges,
         ]
       );
-      useActivatePendingSubAgents({ selectedAiRequest });
-      useLoadSubAgentRequests({ selectedAiRequest });
-
       const onSendEditorFunctionCallResults = React.useCallback(
         async (
-          aiRequestId: string,
           editorFunctionCallResults: Array<EditorFunctionCallResult>,
           options: {|
-            createdSceneNames?: Array<string>,
             createdProject?: ?gdProject,
+            createdSceneNames?: Array<string>,
           |}
         ) => {
           await onSendMessage({
-            aiRequestId,
             userMessage: '',
             createdProject: options.createdProject,
             createdSceneNames: options.createdSceneNames,
@@ -865,33 +865,11 @@ export const AskAiEditor: React.ComponentType<Props> = React.memo<Props>(
         },
         [onSendMessage]
       );
-
-      /**
-       * Collect all AI requests to process: the selected request, and all sub-agent requests.
-       */
-      const aiRequestsToProcess = React.useMemo(
-        () => {
-          const result = [];
-          if (selectedAiRequest) {
-            result.push(selectedAiRequest);
-          }
-          const subAgentIds = Object.keys(activeSubAgents);
-          for (const subAgentId of subAgentIds) {
-            const subAgentRequest = aiRequests[subAgentId];
-            if (subAgentRequest) {
-              result.push(subAgentRequest);
-            }
-          }
-          return result;
-        },
-        [selectedAiRequest, activeSubAgents, aiRequests]
-      );
-
       const { onProcessFunctionCalls } = useProcessFunctionCalls({
         project,
         resourceManagementProps,
+        selectedAiRequest,
         editorCallbacks,
-        aiRequestsToProcess,
         onSendEditorFunctionCallResults,
         getEditorFunctionCallResults,
         addEditorFunctionCallResults,
@@ -904,15 +882,6 @@ export const AskAiEditor: React.ComponentType<Props> = React.memo<Props>(
         onExtensionInstalled,
         isReadyToProcessFunctionCalls,
       });
-
-      // Wrap onProcessFunctionCalls to bind the selected AI request for the chat UI.
-      const onProcessSelectedAiRequestFunctionCalls = React.useCallback(
-        async (functionCalls: Array<AiRequestMessageAssistantFunctionCall>) => {
-          if (!selectedAiRequest) return;
-          await onProcessFunctionCalls(selectedAiRequest, functionCalls);
-        },
-        [selectedAiRequest, onProcessFunctionCalls]
-      );
 
       React.useEffect(() => {
         // When component is mounted, and an AI request was already selected,
@@ -1408,23 +1377,21 @@ export const AskAiEditor: React.ComponentType<Props> = React.memo<Props>(
                 ref={aiRequestChatRef}
                 aiRequest={selectedAiRequest}
                 onStartNewAiRequest={startNewAiRequest}
-                onSendUserMessage={async ({
+                onSendUserMessage={({
                   userMessage,
                   mode,
                 }: {|
                   userMessage: string,
                   mode: 'chat' | 'agent' | 'orchestrator',
-                |}) => {
-                  if (!selectedAiRequestId) return;
-                  await onSendMessage({
-                    aiRequestId: selectedAiRequestId,
+                |}) =>
+                  onSendMessage({
                     userMessage,
-                    newMode: mode,
+                    mode,
                     editorFunctionCallResults: selectedAiRequest
                       ? getEditorFunctionCallResults(selectedAiRequest.id) || []
                       : [],
-                  });
-                }}
+                  })
+                }
                 isSending={isSendingAiRequest(selectedAiRequestId)}
                 isSendingUserMessage={isSendingUserMessage}
                 lastSendError={getLastSendError(selectedAiRequestId)}
@@ -1436,7 +1403,7 @@ export const AskAiEditor: React.ComponentType<Props> = React.memo<Props>(
                     ? 'upgrade'
                     : 'none'
                 }
-                onProcessFunctionCalls={onProcessSelectedAiRequestFunctionCalls}
+                onProcessFunctionCalls={onProcessFunctionCalls}
                 editorFunctionCallResults={
                   (selectedAiRequest &&
                     getEditorFunctionCallResults(selectedAiRequest.id)) ||
